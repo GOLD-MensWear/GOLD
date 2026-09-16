@@ -161,6 +161,8 @@ footer{border-top:1px solid var(--line);padding:28px 0;color:#777;font-size:12px
 @media(max-width:520px){.buy-preview{grid-template-columns:100px 1fr}.buy-preview img{width:100px;height:125px}.size-grid{grid-template-columns:repeat(2,1fr)}}
 
 </style>
+<script src="gold-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <header id="header">
@@ -351,87 +353,12 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
       <input id="customerPhone" type="tel" placeholder="رقم الموبايل" autocomplete="tel" inputmode="tel" style="width:100%;padding:13px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#111;color:#fff;margin-bottom:9px;text-align:right">
       <input id="customerAddress" type="text" placeholder="العنوان / علامة مميزة (اختياري)" autocomplete="street-address" style="width:100%;padding:13px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#111;color:#fff;margin-bottom:10px;text-align:right">
       <div id="customerLocationPreview" style="font-size:12px;color:#aaa;line-height:1.7;margin-bottom:10px"></div>
-      <button class="whatsapp-order-btn" id="whatsappOrderBtn" type="button">إرسال الطلب على واتساب 🟢</button>
+      <button class="whatsapp-order-btn" id="whatsappOrderBtn" type="button">إتمام الطلب وإرساله 🟢</button>
     </div>
   </aside>
 </div>
 
 
-<script src="gold-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-/* GOLD live Supabase storefront bridge */
-(() => {
-  const cfg = window.GOLD_SUPABASE || {};
-  const valid = cfg.url && cfg.publishableKey && !String(cfg.url).includes('PASTE_YOUR') && !String(cfg.publishableKey).includes('PASTE_YOUR');
-  window.GOLD_CONFIG = Object.assign({ adminPath:'/admin.html', currency:'EGP', version:'2.0.0', connected:false }, window.GOLD_CONFIG || {});
-  window.GOLD_DB_PRODUCTS = [];
-  let client = null;
-  if (valid && window.supabase) {
-    client = window.supabase.createClient(cfg.url, cfg.publishableKey);
-    window.GOLD_CONFIG.connected = true;
-  }
-  window.GOLD_SUPABASE_CLIENT = client;
-
-  const escapeHtml = (v='') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-  const money = n => `${Number(n||0).toLocaleString('ar-EG')} جنيه`;
-  const firstImage = p => (Array.isArray(p.images) && p.images[0]) || 'logo.jpg';
-
-  function renderLiveProducts(products){
-    if (!Array.isArray(products) || !products.length) return;
-    window.GOLD_DB_PRODUCTS = products;
-    const grid = document.querySelector('.products-grid');
-    if (!grid) return;
-    grid.innerHTML = products.map(p => `
-      <article class="product-card reveal" data-product-id="${escapeHtml(p.id)}">
-        <div class="product-image"><img alt="${escapeHtml(p.name_en || p.name_ar || 'GOLD Product')}" src="${escapeHtml(firstImage(p))}" loading="lazy"/></div>
-        <div class="product-info">
-          <div class="product-label">${escapeHtml(p.is_new ? 'NEW ARRIVAL' : (p.category || 'GOLD'))}</div>
-          <h3>${escapeHtml(p.name_ar || p.name_en || 'منتج')}</h3>
-          <p>${escapeHtml(p.description_ar || p.description_en || 'قطعة من GOLD MEN\'S WEAR')}</p>
-          <div class="product-bottom"><span class="price">${money(p.price)}</span><span class="add-cart">أضف للسلة</span></div>
-        </div>
-      </article>`).join('');
-    grid.querySelectorAll('.reveal').forEach(el => el.classList.add('show'));
-    window.dispatchEvent(new CustomEvent('gold:products-loaded', {detail: products}));
-  }
-
-  window.applyTexts = window.applyTexts || (() => true);
-  window.applyLogo = window.applyLogo || (() => true);
-  window.applyProducts = async function(){
-    if (!client) return null;
-    const {data, error} = await client.from('products').select('*').eq('is_active', true).order('created_at', {ascending:false});
-    if (error) { console.warn('GOLD products:', error.message); return null; }
-    if (data && data.length) renderLiveProducts(data);
-    return data || [];
-  };
-
-  window.GOLD_STORE = {
-    client,
-    async getProducts(){
-      if (!client) return [];
-      const {data,error}=await client.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false});
-      if(error) throw error; return data||[];
-    },
-    async createOrder(order, items){
-      if(!client) return {localOnly:true};
-      const {data:created,error}=await client.from('orders').insert(order).select('id').single();
-      if(error) throw error;
-      if(items?.length){
-        const rows=items.map(x=>({order_id:created.id, product_id:x.id||null, product_name:x.name, size:x.size||null, color:x.color||null, quantity:x.qty, price:x.price}));
-        const {error:itemError}=await client.from('order_items').insert(rows);
-        if(itemError) throw itemError;
-      }
-      return created;
-    }
-  };
-
-  // Load products after the page is ready; if the DB is empty, keep the original reference products.
-  if (client) {
-    document.addEventListener('DOMContentLoaded', () => window.applyProducts().catch(console.warn), {once:true});
-  }
-})();
-</script>
 <script>
 (() => {
   const modal = document.createElement('div');
@@ -485,11 +412,6 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
   function productFromCard(card){
     const img=card.querySelector('.product-image img');
-    const id=card.dataset.productId;
-    const dbProduct=(window.GOLD_DB_PRODUCTS||[]).find(p=>String(p.id)===String(id));
-    if(dbProduct){
-      return {id:dbProduct.id,name:dbProduct.name_ar||dbProduct.name_en||'منتج',desc:dbProduct.description_ar||dbProduct.description_en||'قطعة من GOLD MEN\'S WEAR',label:dbProduct.is_new?'NEW ARRIVAL':(dbProduct.category||'GOLD'),price:Number(dbProduct.price)||0,image:(Array.isArray(dbProduct.images)&&dbProduct.images[0])||img?.src||'logo.jpg',sizes:Array.isArray(dbProduct.sizes)&&dbProduct.sizes.length?dbProduct.sizes:sizes,colors:Array.isArray(dbProduct.colors)?dbProduct.colors:[]};
-    }
     const priceText=card.querySelector('.price')?.textContent||'';
     const m=priceText.match(/([0-9]+)\s*جنيه/);
     return {name:card.querySelector('h3')?.textContent.trim()||'منتج',desc:card.querySelector('.product-info p')?.textContent.trim()||'قطعة من GOLD MEN\'S WEAR',label:card.querySelector('.product-label')?.textContent.trim()||'GOLD',price:m?Number(m[1]):0,image:img?.src||''};
@@ -499,17 +421,13 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
     selectedProduct=productFromCard(card); selectedSize='M';
     $('buyImg').src=selectedProduct.image; $('buyImg').alt=selectedProduct.name;
     $('buyLabel').textContent=selectedProduct.label; $('buyName').textContent=selectedProduct.name; $('buyDesc').textContent=selectedProduct.desc; $('buyPrice').textContent=money(selectedProduct.price); $('buyQty').value=1;
-    const productSizes=(selectedProduct.sizes&&selectedProduct.sizes.length)?selectedProduct.sizes:sizes;
-    selectedSize=productSizes[0]||'M';
-    $('sizeGrid').innerHTML=productSizes.map((s,i)=>`<button type="button" class="size-btn ${i===0?'selected':''}" data-size="${s}">${s}</button>`).join('');
+    $('sizeGrid').innerHTML=sizes.map(s=>`<button type="button" class="size-btn ${s==='M'?'selected':''}" data-size="${s}">${s}</button>`).join('');
     modal.classList.add('open');
   }
   function closeBuy(){modal.classList.remove('open');}
 
-  document.addEventListener('click',e=>{
-    const card=e.target.closest('.product-card');
-    if(!card || e.target.closest('.cart-fab,.cart-overlay')) return;
-    openBuy(card);
+  document.querySelectorAll('.product-card').forEach(card=>{
+    card.addEventListener('click',e=>{ if(e.target.closest('.cart-fab,.cart-overlay')) return; openBuy(card); });
   });
   $('sizeGrid').addEventListener('click',e=>{const b=e.target.closest('.size-btn');if(!b)return;selectedSize=b.dataset.size;document.querySelectorAll('.size-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');});
   $('buyConfirm').addEventListener('click',()=>{
@@ -521,12 +439,12 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
   modal.querySelector('.buy-close').addEventListener('click',closeBuy);
   modal.addEventListener('click',e=>{if(e.target===modal)closeBuy();});
 
-  // Apply saved store data on every load.
-  // These hooks are defined by the V1 integration bridge below if the backend is not connected yet.
-  applyTexts();applyLogo();applyProducts();
+  // Apply saved store data on every load when integration helpers exist.
+  if(typeof applyTexts==='function') applyTexts();
+  if(typeof applyLogo==='function') applyLogo();
+  if(typeof applyProducts==='function') applyProducts();
 })();
 </script>
-
 <script>
 /* Production mode: no demo WhatsApp interception. */
 window.GOLD_TEST_MODE=false;
@@ -625,41 +543,51 @@ window.GOLD_TEST_MODE=false;
     return lines.join('\n');
   }
 
-  if(ORDER) ORDER.addEventListener('click',async function(){
-    try {
-      const client=window.GOLD_SUPABASE_CLIENT;
-      const items=window.goldCart||[];
-      if(!client || !items.length) return;
-      const name=(NAME?.value||'').trim(), phone=(PHONE?.value||'').trim(), address=(ADDRESS?.value||'').trim();
-      if(!name || !phone || !window.customerLocation || !window.deliveryFee) return;
-      const subtotal=items.reduce((a,x)=>a+x.price*x.qty,0);
-      const total=subtotal+window.deliveryFee;
-      const order=await window.GOLD_STORE.createOrder({customer_name:name,phone,address,city:null,notes:null,total,status:'new'},items);
-      if(order?.id){ try{localStorage.setItem('goldLastOrderId',order.id);}catch(e){} }
-    } catch(e) { console.warn('GOLD order database save failed:', e.message||e); }
-  }, true);
+  let savingOrder=false;
+  async function saveOrderToSupabase(items,name,phone,address,loc,fee,subtotal,total){
+    const cfg=window.GOLD_SUPABASE;
+    if(!cfg?.url || !cfg?.publishableKey) throw new Error('إعدادات Supabase غير موجودة.');
+    if(!window.supabase) throw new Error('تعذر تحميل خدمة الطلبات.');
+    const client=window.supabase.createClient(cfg.url,cfg.publishableKey);
+    const payload={
+      customer_name:name, phone, address:address||null,
+      latitude:loc?.lat??null, longitude:loc?.lon??null,
+      distance_km:window.deliveryDistanceKm??null,
+      delivery_fee:fee, subtotal, total,
+      items:items.map(x=>({name:x.name,size:x.size,qty:x.qty,price:Number(x.price),image:x.image||null})),
+      status:'new'
+    };
+    const {data,error}=await client.from('orders').insert(payload).select('id').single();
+    if(error) throw error;
+    return data?.id;
+  }
 
-  if(ORDER) ORDER.addEventListener('click',function(){
+  if(ORDER) ORDER.addEventListener('click',async function(){
+    if(savingOrder)return;
     const items=window.goldCart||[];
     if(!items.length){alert('السلة فاضية.');return;}
     if(!window.customerLocation || !window.deliveryFee){alert('حدد الموقع الأول.');return;}
-    const name=(NAME?.value||'').trim(), phone=(PHONE?.value||'').trim();
+    const name=(NAME?.value||'').trim(), phone=(PHONE?.value||'').trim(), address=(ADDRESS?.value||'').trim();
     if(!name){NAME.focus();alert('اكتب اسمك الأول.');return;}
     if(!phone){PHONE.focus();alert('اكتب رقم موبايلك.');return;}
-    const message=buildMessage();
-    const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(message);
-    // افتح WhatsApp مباشرةً في نفس ضغطة العميل، مع الرسالة كاملة جاهزة للإرسال.
-    // هذا هو أسلوب WhatsApp الرسمي Click-to-Chat؛ الرقم بصيغة دولية بدون الصفر الأول.
-    try {
-      const a=document.createElement('a');
-      a.href=waUrl;
-      a.target='_blank';
-      a.rel='noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch(e) {
-      window.location.assign(waUrl);
+    const subtotal=items.reduce((a,x)=>a+Number(x.price||0)*Number(x.qty||0),0);
+    const total=subtotal+Number(window.deliveryFee||0);
+    savingOrder=true; ORDER.disabled=true; ORDER.textContent='جاري تأكيد الطلب…';
+    try{
+      const orderId=await saveOrderToSupabase(items,name,phone,address,window.customerLocation,Number(window.deliveryFee||0),subtotal,total);
+      const message=buildMessage()+`\n\n🧾 رقم الطلب: ${orderId||'—'}`;
+      const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(message);
+      if(BOX) BOX.innerHTML=`<div style="text-align:center;padding:18px 6px;line-height:2"><div style="font-size:42px">✅</div><h3 style="margin:0 0 7px">تم استلام طلبك بنجاح</h3><div>رقم الطلب: <b>${orderId||'—'}</b></div><div style="color:#aaa;font-size:12px;margin-top:5px">سيتم فتح واتساب لإرسال تفاصيل الطلب.</div><button type="button" id="goldOpenWhatsapp" class="whatsapp-order-btn" style="margin-top:12px">إرسال التفاصيل على واتساب 🟢</button></div>`;
+      const openWA=()=>{try{const a=document.createElement('a');a.href=waUrl;a.target='_blank';a.rel='noopener noreferrer';document.body.appendChild(a);a.click();a.remove();}catch(e){window.location.assign(waUrl)}};
+      document.getElementById('goldOpenWhatsapp')?.addEventListener('click',openWA);
+      openWA();
+      try{localStorage.removeItem('goldCart');}catch(e){}
+      window.goldCart.length=0;
+      if(typeof renderCart==='function') renderCart();
+    }catch(err){
+      console.error(err);
+      alert('لم يتم تسجيل الطلب في لوحة الإدارة. تأكد من إعداد جدول orders في Supabase ثم حاول مرة أخرى.');
+      ORDER.disabled=false; ORDER.textContent='إتمام الطلب وإرساله 🟢'; savingOrder=false;
     }
   });
 })();
