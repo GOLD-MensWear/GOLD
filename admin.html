@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GOLD Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Montserrat:wght@600;700;800&display=swap');
+:root{--bg:#070707;--card:#111;--gold:#d8a72d;--gold2:#ffe08a;--line:rgba(255,255,255,.1);--muted:#aaa;--white:#f7f5ef}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font-family:Cairo,Arial,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.wrap{width:min(1180px,94%);margin:auto}.top{padding:22px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:15px}.brand b{font:800 28px Montserrat}.brand small{display:block;color:var(--gold2);letter-spacing:3px;font:700 9px Montserrat}.gold{color:var(--gold2)}.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:800}.primary{background:var(--gold);color:#111}.ghost{background:#181818;color:#fff;border:1px solid var(--line)}.grid{display:grid;grid-template-columns:1fr 1.7fr;gap:18px;margin:22px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{padding:14px;border:1px solid var(--line);border-radius:14px;background:#0d0d0d}.stat b{font-size:25px;color:var(--gold2)}label{display:block;font-size:12px;color:#ccc;margin:10px 0 6px}input,textarea,select{width:100%;background:#090909;color:#fff;border:1px solid #333;border-radius:10px;padding:11px;outline:none}textarea{min-height:75px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-size:12px;vertical-align:middle}.thumb{width:52px;height:62px;object-fit:cover;border-radius:8px;background:#222}.login{width:min(420px,94%);margin:8vh auto}.notice{padding:11px 13px;border-radius:10px;background:#171717;color:#ccc;margin:10px 0;font-size:12px;line-height:1.7}.hidden{display:none}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#1d1d1d;color:var(--gold2);font-size:11px}.danger{color:#ffb0b0}.muted{color:var(--muted)}@media(max-width:850px){.grid{grid-template-columns:1fr}.table{min-width:760px}.table-wrap{overflow:auto}.stats{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="loginView" class="login card">
+  <div class="brand"><b>GOLD</b><small>MEN'S WEAR • ADMIN</small></div>
+  <h2>دخول لوحة التحكم</h2>
+  <div class="notice">الدخول ده خاص بصاحب المتجر فقط. استخدم نفس حساب الـAdmin الذي أنشأته في Supabase.</div>
+  <label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username">
+  <label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password">
+  <div class="actions"><button id="login" class="btn primary">دخول</button></div>
+  <div id="loginMsg" class="notice hidden"></div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top wrap"><div class="brand"><b>GOLD</b><small>MEN'S WEAR • ADMIN</small></div><div class="actions"><span id="userEmail" class="pill"></span><button id="logout" class="btn ghost">تسجيل الخروج</button></div></header>
+  <main class="wrap">
+    <div id="appMsg" class="notice hidden"></div>
+    <section class="stats">
+      <div class="stat"><div class="muted">المنتجات</div><b id="statProducts">0</b></div>
+      <div class="stat"><div class="muted">الطلبات</div><b id="statOrders">0</b></div>
+      <div class="stat"><div class="muted">طلبات جديدة</div><b id="statNew">0</b></div>
+    </section>
+    <section class="grid">
+      <div class="card">
+        <h3 id="formTitle">إضافة منتج</h3>
+        <input id="productId" type="hidden">
+        <label>اسم المنتج بالعربي</label><input id="nameAr">
+        <label>اسم المنتج بالإنجليزي</label><input id="nameEn">
+        <div class="row"><div><label>السعر</label><input id="price" type="number" min="0" step="0.01"></div><div><label>السعر قبل الخصم</label><input id="comparePrice" type="number" min="0" step="0.01"></div></div>
+        <label>الوصف بالعربي</label><textarea id="descAr"></textarea>
+        <label>الوصف بالإنجليزي</label><textarea id="descEn"></textarea>
+        <label>روابط الصور — رابط في كل سطر</label><textarea id="images" placeholder="https://..."></textarea>
+        <div class="row"><div><label>الألوان — كل لون في سطر</label><textarea id="colors"></textarea></div><div><label>المقاسات — كل مقاس في سطر</label><textarea id="sizes" placeholder="M\nL\nXL\n2XL"></textarea></div></div>
+        <div class="row"><div><label>المخزون</label><input id="stock" type="number" min="0" value="0"></div><div><label>القسم</label><input id="category"></div></div>
+        <div class="actions"><label style="display:flex;align-items:center;gap:8px;margin:0"><input id="isNew" type="checkbox" style="width:auto"> New Arrival</label><label style="display:flex;align-items:center;gap:8px;margin:0"><input id="isActive" type="checkbox" checked style="width:auto"> ظاهر في المتجر</label></div>
+        <div class="actions"><button id="saveProduct" class="btn primary">حفظ المنتج</button><button id="clearForm" class="btn ghost">مسح</button></div>
+      </div>
+      <div class="card"><h3>المنتجات</h3><div class="table-wrap"><table class="table"><thead><tr><th>صورة</th><th>المنتج</th><th>السعر</th><th>المخزون</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="productsBody"></tbody></table></div></div>
+    </section>
+    <section class="card"><h3>الطلبات</h3><div class="table-wrap"><table class="table"><thead><tr><th>العميل</th><th>الهاتف</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th>التفاصيل</th></tr></thead><tbody id="ordersBody"></tbody></table></div></section>
+  </main>
+</div>
+<script src="gold-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+ const cfg=window.GOLD_SUPABASE||{};
+ const ready=cfg.url&&!String(cfg.url).includes('PASTE_YOUR')&&cfg.publishableKey&&!String(cfg.publishableKey).includes('PASTE_YOUR');
+ const $=id=>document.getElementById(id);
+ const show=(id,text)=>{$(id).textContent=text;$(id).classList.remove('hidden')};
+ if(!ready||!window.supabase){show('loginMsg','أكمل gold-config.js بوضع Project URL وPublishable key أولًا. لا تضع Secret key هنا.');return;}
+ const sb=window.supabase.createClient(cfg.url,cfg.publishableKey);
+ let products=[],orders=[];
+ const lines=s=>(s||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ function msg(t){show('appMsg',t);setTimeout(()=>$('appMsg').classList.add('hidden'),3500)}
+ async function ensureAdmin(){
+   const {data:{user}}=await sb.auth.getUser();
+   if(!user)return false;
+   const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',user.id).maybeSingle();
+   if(error) throw error;
+   return !!data;
+ }
+ async function load(){
+   const admin=await ensureAdmin(); if(!admin){await sb.auth.signOut();show('loginMsg','الحساب ده مش مسجل كـ Admin.');return;}
+   const {data:{user}}=await sb.auth.getUser(); $('userEmail').textContent=user.email||'';
+   $('loginView').classList.add('hidden');$('app').classList.remove('hidden');
+   await Promise.all([loadProducts(),loadOrders()]);
+ }
+ async function loadProducts(){const r=await sb.from('products').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;products=r.data||[];$('statProducts').textContent=products.length;renderProducts()}
+ function renderProducts(){ $('productsBody').innerHTML=products.map(p=>`<tr><td><img class="thumb" src="${esc((p.images||[])[0]||'logo.jpg')}"></td><td><b>${esc(p.name_ar||p.name_en)}</b><br><span class="muted">${esc(p.category||'GOLD')}</span></td><td>${Number(p.price||0).toLocaleString('ar-EG')} ج</td><td>${p.stock}</td><td>${p.is_active?'<span class="pill">ظاهر</span>':'<span class="pill">مخفي</span>'}</td><td><button class="btn ghost" onclick="window.editProduct('${p.id}')">تعديل</button> <button class="btn ghost danger" onclick="window.deleteProduct('${p.id}')">حذف</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">لا توجد منتجات بعد.</td></tr>' }
+ function fill(p){$('formTitle').textContent='تعديل منتج';$('productId').value=p.id;$('nameAr').value=p.name_ar||'';$('nameEn').value=p.name_en||'';$('price').value=p.price||0;$('comparePrice').value=p.compare_price||'';$('descAr').value=p.description_ar||'';$('descEn').value=p.description_en||'';$('images').value=(p.images||[]).join('\n');$('colors').value=(p.colors||[]).join('\n');$('sizes').value=(p.sizes||[]).join('\n');$('stock').value=p.stock||0;$('category').value=p.category||'';$('isNew').checked=!!p.is_new;$('isActive').checked=p.is_active!==false;window.scrollTo({top:0,behavior:'smooth'})}
+ window.editProduct=id=>{const p=products.find(x=>x.id===id);if(p)fill(p)};
+ window.deleteProduct=async id=>{if(!confirm('متأكد إنك عايز تحذف المنتج؟'))return;const r=await sb.from('products').delete().eq('id',id);if(r.error){msg(r.error.message);return}msg('تم حذف المنتج');clear();await loadProducts()};
+ function clear(){ $('formTitle').textContent='إضافة منتج';['productId','nameAr','nameEn','price','comparePrice','descAr','descEn','images','colors','sizes','stock','category'].forEach(id=>$(id).value='');$('stock').value=0;$('isNew').checked=false;$('isActive').checked=true }
+ $('clearForm').onclick=clear;
+ $('saveProduct').onclick=async()=>{try{const id=$('productId').value;const row={name_ar:$('nameAr').value.trim(),name_en:$('nameEn').value.trim(),description_ar:$('descAr').value.trim(),description_en:$('descEn').value.trim(),price:Number($('price').value||0),compare_price:$('comparePrice').value?Number($('comparePrice').value):null,images:lines($('images').value),colors:lines($('colors').value),sizes:lines($('sizes').value),stock:Number($('stock').value||0),category:$('category').value.trim()||null,is_new:$('isNew').checked,is_active:$('isActive').checked,updated_at:new Date().toISOString()};if(!row.name_ar&&!row.name_en)throw Error('اكتب اسم المنتج');let r=id?await sb.from('products').update(row).eq('id',id):await sb.from('products').insert(row);if(r.error)throw r.error;msg(id?'تم تعديل المنتج':'تم إضافة المنتج');clear();await loadProducts()}catch(e){msg(e.message||String(e))}};
+ async function loadOrders(){const r=await sb.from('orders').select('*').order('created_at',{ascending:false});if(r.error)throw r.error;orders=r.data||[];$('statOrders').textContent=orders.length;$('statNew').textContent=orders.filter(o=>o.status==='new').length;renderOrders()}
+ function renderOrders(){const statuses=[['new','جديد'],['confirmed','تم التأكيد'],['preparing','جاري التجهيز'],['shipped','تم الشحن'],['delivered','تم التسليم'],['cancelled','ملغي']];$('ordersBody').innerHTML=orders.map(o=>`<tr><td>${esc(o.customer_name)}</td><td>${esc(o.phone)}</td><td>${Number(o.total||0).toLocaleString('ar-EG')} ج</td><td><select onchange="window.updateOrder('${o.id}',this.value)">${statuses.map(s=>`<option value="${s[0]}" ${o.status===s[0]?'selected':''}>${s[1]}</option>`).join('')}</select></td><td>${new Date(o.created_at).toLocaleString('ar-EG')}</td><td><button class="btn ghost" onclick="window.orderDetails('${o.id}')">عرض</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">لا توجد طلبات بعد.</td></tr>'}
+ window.updateOrder=async(id,status)=>{const r=await sb.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id);if(r.error){msg(r.error.message);return}await loadOrders();msg('تم تحديث حالة الطلب')};
+ window.orderDetails=async id=>{const o=orders.find(x=>x.id===id);const r=await sb.from('order_items').select('*').eq('order_id',id);if(r.error){msg(r.error.message);return}const text=[`العميل: ${o.customer_name}`,`الهاتف: ${o.phone}`,`العنوان: ${o.address||'-'}`,`الإجمالي: ${o.total} جنيه`,'','المنتجات:',...(r.data||[]).map(x=>`- ${x.product_name} | ${x.size||'-'} | ${x.quantity} × ${x.price} جنيه`)];alert(text.join('\n'))};
+ $('login').onclick=async()=>{try{const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await load()}catch(e){show('loginMsg',e.message||String(e))}};
+ $('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
+ sb.auth.onAuthStateChange((_event)=>{ if(_event==='SIGNED_IN') load().catch(e=>show('loginMsg',e.message||String(e))); });
+ load().catch(e=>show('loginMsg',e.message||String(e)));
+})();
+</script>
+</body></html>
